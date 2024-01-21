@@ -2,18 +2,18 @@ package ginrestaurant
 
 import (
 	restaurantbiz "food-delivery/restaurant/biz"
-	restaurantmodel "food-delivery/restaurant/model"
 	restaurantstorage "food-delivery/restaurant/storage"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
-func CreateRestaurant(db *gorm.DB) gin.HandlerFunc {
+func DeleteRestaurant(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var data restaurantmodel.RestaurantCreate
+		id, err := strconv.Atoi(c.Param("id"))
 
-		if err := c.ShouldBind(&data); err != nil {
+		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
@@ -22,8 +22,9 @@ func CreateRestaurant(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		store := restaurantstorage.NewSQLStore(db)
-		biz := restaurantbiz.NewCreateRestaurantBiz(store)
-		if err := biz.Create(c.Request.Context(), &data); err != nil {
+		biz := restaurantbiz.NewDeleteRestaurantBiz(store)
+
+		if err := biz.DeleteRestaurant(c.Request.Context(), id); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
@@ -32,7 +33,7 @@ func CreateRestaurant(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"data": data,
+			"data": 1,
 		})
 	}
 }
