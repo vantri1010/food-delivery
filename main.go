@@ -1,6 +1,7 @@
 package main
 
 import (
+	"food-delivery/component/appctx"
 	"food-delivery/restaurant/transport/ginrestaurant"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -40,7 +41,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	log.Println(db)
+	db = db.Debug()
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -49,12 +50,14 @@ func main() {
 		})
 	})
 
+	appContext := appctx.NewAppContext(db)
+
 	// POST /restaurants
 	v1 := r.Group("/v1")
 
 	restaurants := v1.Group("/restaurants")
 
-	restaurants.POST("", ginrestaurant.CreateRestaurant(db))
+	restaurants.POST("", ginrestaurant.CreateRestaurant(appContext))
 
 	restaurants.GET("/:id", func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -76,41 +79,7 @@ func main() {
 		})
 	})
 
-	restaurants.GET("", func(c *gin.Context) {
-		var data []Restaurant
-
-		type Paging struct {
-			Page  int `json:"page" form:"page"`
-			Limit int `json:"limit" form:"limit"`
-		}
-
-		var pagingData Paging
-
-		if err := c.ShouldBind(&pagingData); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		if pagingData.Page <= 0 {
-			pagingData.Page = 1
-		}
-
-		if pagingData.Limit <= 0 {
-			pagingData.Limit = 5
-		}
-
-		db.Offset((pagingData.Page - 1) * pagingData.Limit).
-			Order("id desc").
-			Limit(pagingData.Limit).
-			Find(&data)
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": data,
-		})
-	})
+	restaurants.GET("", ginrestaurant.ListRestaurant(appContext))
 
 	restaurants.PATCH("/:id", func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -140,7 +109,7 @@ func main() {
 		})
 	})
 
-	restaurants.DELETE("/:id", ginrestaurant.DeleteRestaurant(db))
+	restaurants.DELETE("/:id", ginrestaurant.DeleteRestaurant(appContext))
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
