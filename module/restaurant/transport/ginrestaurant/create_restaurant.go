@@ -3,9 +3,9 @@ package ginrestaurant
 import (
 	"food-delivery/common"
 	"food-delivery/component/appctx"
-	restaurantbiz "food-delivery/restaurant/biz"
-	restaurantmodel "food-delivery/restaurant/model"
-	restaurantstorage "food-delivery/restaurant/storage"
+	"food-delivery/module/restaurant/biz"
+	"food-delivery/module/restaurant/model"
+	"food-delivery/module/restaurant/storage"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -26,7 +26,8 @@ func CreateRestaurant(appCtx appctx.AppContext) gin.HandlerFunc {
 
 		store := restaurantstorage.NewSQLStore(db)
 		biz := restaurantbiz.NewCreateRestaurantBiz(store)
-		if err := biz.Create(c.Request.Context(), &data); err != nil {
+
+		if err := biz.CreateRestaurant(c.Request.Context(), &data); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})

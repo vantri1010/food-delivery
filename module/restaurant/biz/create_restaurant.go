@@ -2,8 +2,7 @@ package restaurantbiz
 
 import (
 	"context"
-	"errors"
-	restaurantmodel "food-delivery/restaurant/model"
+	"food-delivery/module/restaurant/model"
 )
 
 type CreateRestaurantStore interface {
@@ -18,9 +17,9 @@ func NewCreateRestaurantBiz(store CreateRestaurantStore) *createRestaurantBiz {
 	return &createRestaurantBiz{store: store}
 }
 
-func (biz *createRestaurantBiz) Create(context context.Context, data *restaurantmodel.RestaurantCreate) error {
-	if data.Name == "" {
-		return errors.New("name can not be empty")
+func (biz *createRestaurantBiz) CreateRestaurant(context context.Context, data *restaurantmodel.RestaurantCreate) error {
+	if err := data.Validate(); err != nil {
+		return err
 	}
 
 	if err := biz.store.Create(context, data); err != nil {

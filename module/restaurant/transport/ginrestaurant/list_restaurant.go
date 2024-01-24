@@ -3,9 +3,9 @@ package ginrestaurant
 import (
 	"food-delivery/common"
 	"food-delivery/component/appctx"
-	restaurantbiz "food-delivery/restaurant/biz"
-	restaurantmodel "food-delivery/restaurant/model"
-	restaurantstorage "food-delivery/restaurant/storage"
+	"food-delivery/module/restaurant/biz"
+	"food-delivery/module/restaurant/model"
+	"food-delivery/module/restaurant/storage"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -35,6 +35,8 @@ func ListRestaurant(appCtx appctx.AppContext) gin.HandlerFunc {
 
 			return
 		}
+
+		filter.Status = []int{1}
 
 		store := restaurantstorage.NewSQLStore(db)
 		biz := restaurantbiz.NewListRestaurantBiz(store)

@@ -2,7 +2,7 @@ package main
 
 import (
 	"food-delivery/component/appctx"
-	"food-delivery/restaurant/transport/ginrestaurant"
+	"food-delivery/module/restaurant/transport/ginrestaurant"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

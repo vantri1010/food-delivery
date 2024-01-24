@@ -3,7 +3,7 @@ package restaurantstorage
 import (
 	"context"
 	"food-delivery/common"
-	restaurantmodel "food-delivery/restaurant/model"
+	"food-delivery/module/restaurant/model"
 )
 
 func (s *sqlStore) ListDataWithCondition(
@@ -14,11 +14,15 @@ func (s *sqlStore) ListDataWithCondition(
 ) ([]restaurantmodel.Restaurant, error) {
 	var result []restaurantmodel.Restaurant
 
-	db := s.db.Table(restaurantmodel.Restaurant{}.TableName()).Where("status in (1)")
+	db := s.db.Table(restaurantmodel.Restaurant{}.TableName())
 
 	if f := filter; f != nil {
 		if f.OwnerId > 0 {
 			db = db.Where("owner_id = ?", f.OwnerId)
+		}
+
+		if len(f.Status) > 0 {
+			db = db.Where("status in (?)", f.Status)
 		}
 	}
 

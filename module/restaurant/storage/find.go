@@ -2,7 +2,7 @@ package restaurantstorage
 
 import (
 	"context"
-	restaurantmodel "food-delivery/restaurant/model"
+	"food-delivery/module/restaurant/model"
 )
 
 func (s *sqlStore) FindDataWithCondition(

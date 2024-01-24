@@ -3,8 +3,8 @@ package ginrestaurant
 import (
 	"food-delivery/common"
 	"food-delivery/component/appctx"
-	restaurantbiz "food-delivery/restaurant/biz"
-	restaurantstorage "food-delivery/restaurant/storage"
+	"food-delivery/module/restaurant/biz"
+	"food-delivery/module/restaurant/storage"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"

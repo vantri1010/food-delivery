@@ -3,7 +3,7 @@ package restaurantbiz
 import (
 	"context"
 	"food-delivery/common"
-	restaurantmodel "food-delivery/restaurant/model"
+	"food-delivery/module/restaurant/model"
 )
 
 type ListRestaurantStore interface {
