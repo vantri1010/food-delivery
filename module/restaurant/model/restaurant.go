@@ -18,6 +18,10 @@ func (Restaurant) TableName() string {
 	return "restaurants"
 }
 
+func (data *Restaurant) Mask(isAdminOrOwner bool) {
+	data.GenUID(common.DbTypeRestaurant)
+}
+
 type RestaurantCreate struct {
 	common.SQLModel
 	Name string `json:"name" gorm:"column:name"`
@@ -36,6 +40,10 @@ func (data *RestaurantCreate) Validate() error {
 
 func (RestaurantCreate) TableName() string {
 	return "restaurants"
+}
+
+func (data *RestaurantCreate) Mask(isAdminOrOwner bool) {
+	data.GenUID(common.DbTypeRestaurant)
 }
 
 type RestaurantUpdate struct {
