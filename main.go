@@ -4,16 +4,12 @@ import (
 	"food-delivery/component/appctx"
 	"food-delivery/component/uploadprovider"
 	"food-delivery/middleware"
-	"food-delivery/module/restaurant/transport/ginrestaurant"
-	"food-delivery/module/upload/uploadtransport/ginupload"
-	"food-delivery/module/user/transport/ginuser"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 type Restaurant struct {
@@ -71,67 +67,8 @@ func main() {
 	// POST /restaurants
 	v1 := r.Group("/v1")
 
-	v1.POST("/upload", ginupload.UpLoad(appContext))
-
-	v1.POST("/register", ginuser.Register(appContext))
-	v1.POST("/authenticate", ginuser.Login(appContext))
-	v1.GET("/profile", middleware.RequiredAuth(appContext), ginuser.Profile(appContext))
-
-	restaurants := v1.Group("/restaurants")
-
-	restaurants.POST("", ginrestaurant.CreateRestaurant(appContext))
-
-	restaurants.GET("/:id", func(c *gin.Context) {
-		id, err := strconv.Atoi(c.Param("id"))
-
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		var data Restaurant
-
-		db.Where("id = ?", id).First(&data)
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": data,
-		})
-	})
-
-	restaurants.GET("", ginrestaurant.ListRestaurant(appContext))
-
-	restaurants.PATCH("/:id", func(c *gin.Context) {
-		id, err := strconv.Atoi(c.Param("id"))
-
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		var data RestaurantUpdate
-
-		if err := c.ShouldBind(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		db.Where("id = ?", id).Updates(&data)
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": data,
-		})
-	})
-
-	restaurants.DELETE("/:id", ginrestaurant.DeleteRestaurant(appContext))
+	setupRoute(appContext, v1)
+	setupAdminRoute(appContext, v1)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

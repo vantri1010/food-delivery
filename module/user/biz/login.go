@@ -38,7 +38,7 @@ func NewLoginBusiness(
 // 3.1 Access token and refresh token
 // 4. Return token(s)
 
-func (business loginBusiness) Login(ctx context.Context, data *usermodel.UserLogin) (*tokenprovider.Token, error) {
+func (business *loginBusiness) Login(ctx context.Context, data *usermodel.UserLogin) (*tokenprovider.Token, error) {
 	user, err := business.storeUser.FindUser(ctx, map[string]interface{}{"email": data.Email})
 
 	if err != nil {
