@@ -14,7 +14,7 @@ type Restaurant struct {
 	Addr       string             `json:"addr" gorm:"column:addr"`
 	Logo       *common.Image      `json:"logo" gorm:"column:logo"`
 	Cover      *common.Images     `json:"cover" gorm:"column:cover"`
-	UserId     int                `json:"-" gorm:"column:user_id"`
+	UserId     int                `json:"-" gorm:"column:user_id"` // for preload
 	User       *common.SimpleUser `json:"user" gorm:"preload:false"`
 	LikedCount int                `json:"liked_count" gorm:"-"`
 }

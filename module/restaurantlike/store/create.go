@@ -1,4 +1,4 @@
-package store
+package restaurantlikestore
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"food-delivery/module/restaurantlike/model"
 )
 
-func (s *sqlStore) Create(ctx context.Context, data *model.Like) error {
+func (s *sqlStore) Create(ctx context.Context, data *restaurantlikemodel.Like) error {
 	db := s.db
 
 	if err := db.Create(data).Error; err != nil {

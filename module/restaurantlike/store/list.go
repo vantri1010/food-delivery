@@ -1,4 +1,4 @@
-package store
+package restaurantlikestore
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (s *sqlStore) GetRestaurantLikes(ctx context.Context, ids []int) (map[int]i
 
 	var listLike []sqlData
 
-	if err := s.db.Table(model.Like{}.TableName()).
+	if err := s.db.Table(restaurantlikemodel.Like{}.TableName()).
 		Select("restaurant_id, count(restaurant_id) as count").
 		Where("restaurant_id in (?)", ids).
 		Group("restaurant_id").
@@ -39,15 +39,15 @@ func (s *sqlStore) GetRestaurantLikes(ctx context.Context, ids []int) (map[int]i
 func (s *sqlStore) GetUsersLikeRestaurant(
 	ctx context.Context,
 	conditions map[string]interface{},
-	filter *model.Filter,
+	filter *restaurantlikemodel.Filter,
 	paging *common.Paging,
 	moreKeys ...string,
 ) ([]common.SimpleUser, error) {
-	var result []model.Like
+	var result []restaurantlikemodel.Like
 
 	db := s.db
 
-	db = db.Table(model.Like{}.TableName()).Where(conditions)
+	db = db.Table(restaurantlikemodel.Like{}.TableName()).Where(conditions)
 
 	if v := filter; v != nil {
 		if v.RestaurantId > 0 {
