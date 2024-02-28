@@ -54,8 +54,6 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 		return nil, common.ErrDB(err)
 	}
 
-	db = db.Preload("User")
-
 	// there are 2 type of paging. by cursor and by offset depend on the user's input
 	// cursor is encoded restaurantId copy from list restaurants api
 	if v := paging.FakeCursor; v != "" {
@@ -73,7 +71,7 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 		db = db.Offset((paging.Page - 1) * paging.Limit)
 	}
 
-	if err := db.
+	if err := db.Preload("User").
 		Limit(paging.Limit).
 		Order("created_at desc").
 		Find(&likes).Error; err != nil {
@@ -88,6 +86,9 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 		users[i].UpdatedAt = nil
 	}
 
-	paging.NextCursor = base58.Encode([]byte(likes[len(likes)-1].CreatedAt.Format(time.DateTime)))
+	if len(likes) > 0 {
+		paging.NextCursor = base58.Encode([]byte(likes[len(likes)-1].CreatedAt.Format(time.DateTime)))
+	}
+
 	return users, nil
 }
