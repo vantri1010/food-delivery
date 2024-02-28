@@ -2,14 +2,11 @@ package restaurantlikestore
 
 import (
 	"context"
-	"fmt"
 	"food-delivery/common"
 	"food-delivery/module/restaurantlike/model"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"time"
 )
-
-const timeLayout = "2006-01-02T15:04:05.999999"
 
 func (s *sqlStore) GetRestaurantLikes(ctx context.Context, ids []int) (map[int]int, error) {
 	result := make(map[int]int)
@@ -63,13 +60,13 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 	// cursor is encoded restaurantId copy from list restaurants api
 	if v := paging.FakeCursor; v != "" {
 		//in this case. cursor is the field timestamp when user like restaurant. due to we have multiple primary keys
-		timeCreated, err := time.Parse(timeLayout, string(base58.Decode(v)))
+		timeCreated, err := time.Parse(time.DateTime, string(base58.Decode(v)))
 
 		if err != nil {
 			return nil, common.ErrDB(err)
 		}
 
-		db = db.Where("created_at < ?", timeCreated.Format("2006-01-02 15:04:05"))
+		db = db.Where("created_at < ?", timeCreated.Format(time.DateTime))
 	} else {
 		// offsets the query by the number of records to skip (based on the current page number)
 		// and sets the limit to the number of records to fetch (based on the paging.Limit field).
@@ -89,12 +86,8 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 		users[i] = *likes[i].User
 		users[i].CreatedAt = item.CreatedAt
 		users[i].UpdatedAt = nil
-
-		if i == len(likes)-1 {
-			cursorStr := base58.Encode([]byte(fmt.Sprintf("%d", item.CreatedAt.Format(timeLayout))))
-			paging.NextCursor = cursorStr
-		}
 	}
 
+	paging.NextCursor = base58.Encode([]byte(likes[len(likes)-1].CreatedAt.Format(time.DateTime)))
 	return users, nil
 }
