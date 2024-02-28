@@ -64,7 +64,7 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 			return nil, common.ErrDB(err)
 		}
 
-		db = db.Where("created_at < ?", timeCreated.Format(time.DateTime))
+		db = db.Where("created_at <= ?", timeCreated.Format(time.DateTime))
 	} else {
 		// offsets the query by the number of records to skip (based on the current page number)
 		// and sets the limit to the number of records to fetch (based on the paging.Limit field).
@@ -72,10 +72,18 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 	}
 
 	if err := db.Preload("User").
-		Limit(paging.Limit).
+		Limit(paging.Limit + 1).
 		Order("created_at desc").
 		Find(&likes).Error; err != nil {
 		return nil, common.ErrDB(err)
+	}
+
+	// handle the case where we in the last page
+	if len(likes) <= paging.Limit {
+		paging.NextCursor = ""
+	} else {
+		paging.NextCursor = base58.Encode([]byte(likes[len(likes)-1].CreatedAt.Format(time.DateTime)))
+		likes = likes[:len(likes)-1]
 	}
 
 	users := make([]common.SimpleUser, len(likes))
@@ -84,10 +92,6 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 		users[i] = *likes[i].User
 		users[i].CreatedAt = item.CreatedAt
 		users[i].UpdatedAt = nil
-	}
-
-	if len(likes) > 0 {
-		paging.NextCursor = base58.Encode([]byte(likes[len(likes)-1].CreatedAt.Format(time.DateTime)))
 	}
 
 	return users, nil
