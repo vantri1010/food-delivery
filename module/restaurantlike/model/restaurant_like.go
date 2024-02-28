@@ -9,10 +9,11 @@ import (
 const EntityName = "UserLikeRestaurant"
 
 type Like struct {
-	RestaurantId int                `json:"restaurant_id" gorm:"column:restaurant_id"`
-	UserId       int                `json:"user_id" gorm:"column:user_id"`
-	CreateAt     *time.Time         `json:"create_at" gorm:"column:created_at"`
-	User         *common.SimpleUser `json:"user" gorm:"column:preload:false"`
+	RestaurantId int `json:"restaurant_id" gorm:"column:restaurant_id"`
+	UserId       int `json:"user_id" gorm:"column:user_id"`
+	//CreatedAt    *time.Time `json:"created_at,omitempty" gorm:"column:created_at"`
+	CreatedAt *time.Time         `json:"created_at,omitempty" gorm:"column:created_at;type:TIMESTAMP DEFAULT CURRENT_TIMESTAMP"`
+	User      *common.SimpleUser `json:"user,omitempty" gorm:"<-:false"` // use to preload users. read only for avoid insert into associated table user when insert into Like
 }
 
 func (Like) TableName() string {
@@ -33,6 +34,6 @@ func ErrCannotLikeRestaurant(err error) *common.AppError {
 func ErrCannotUnLikeRestaurant(err error) *common.AppError {
 	return common.NewCustomError(
 		err,
-		fmt.Sprintf("cannot unlike this restanrant"),
-		fmt.Sprintf("ErrCannotUnlikeRestaurant"))
+		fmt.Sprintf("cannot dislike this restanrant"),
+		fmt.Sprintf("ErrCannotDislikeRestaurant"))
 }

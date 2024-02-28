@@ -43,16 +43,14 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 	paging *common.Paging,
 	moreKeys ...string,
 ) ([]common.SimpleUser, error) {
-	var result []restaurantlikemodel.Like
+	var likes []restaurantlikemodel.Like
 
 	db := s.db
 
 	db = db.Table(restaurantlikemodel.Like{}.TableName()).Where(conditions)
 
-	if v := filter; v != nil {
-		if v.RestaurantId > 0 {
-			db.Where("restaurant_id = ?", v.RestaurantId)
-		}
+	if filter.RestaurantId > 0 {
+		db.Where("restaurant_id = ?", filter.RestaurantId)
 	}
 
 	if err := db.Count(&paging.Total).Error; err != nil {
@@ -61,7 +59,10 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 
 	db = db.Preload("User")
 
+	// there are 2 type of paging. by cursor and by offset depend on the user's input
+	// cursor is encoded restaurantId copy from list restaurants api
 	if v := paging.FakeCursor; v != "" {
+		//in this case. cursor is the field timestamp when user like restaurant. due to we have multiple primary keys
 		timeCreated, err := time.Parse(timeLayout, string(base58.Decode(v)))
 
 		if err != nil {
@@ -70,25 +71,27 @@ func (s *sqlStore) GetUsersLikeRestaurant(
 
 		db = db.Where("created_at < ?", timeCreated.Format("2006-01-02 15:04:05"))
 	} else {
+		// offsets the query by the number of records to skip (based on the current page number)
+		// and sets the limit to the number of records to fetch (based on the paging.Limit field).
 		db = db.Offset((paging.Page - 1) * paging.Limit)
 	}
 
 	if err := db.
 		Limit(paging.Limit).
 		Order("created_at desc").
-		Find(&result).Error; err != nil {
+		Find(&likes).Error; err != nil {
 		return nil, common.ErrDB(err)
 	}
 
-	users := make([]common.SimpleUser, len(result))
+	users := make([]common.SimpleUser, len(likes))
 
-	for i, item := range result {
-		result[i].User.CreatedAt = item.CreateAt
-		result[i].User.UpdatedAt = nil
-		users[i] = *result[i].User
+	for i, item := range likes {
+		users[i] = *likes[i].User
+		users[i].CreatedAt = item.CreatedAt
+		users[i].UpdatedAt = nil
 
-		if i == len(result)-1 {
-			cursorStr := base58.Encode([]byte(fmt.Sprintf("%d", item.CreateAt.Format(timeLayout))))
+		if i == len(likes)-1 {
+			cursorStr := base58.Encode([]byte(fmt.Sprintf("%d", item.CreatedAt.Format(timeLayout))))
 			paging.NextCursor = cursorStr
 		}
 	}

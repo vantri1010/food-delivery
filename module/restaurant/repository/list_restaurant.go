@@ -48,7 +48,7 @@ func (biz *listRestaurantRepo) ListRestaurant(
 
 	likeMap, err := biz.likeStore.GetRestaurantLikes(context, ids)
 
-	if err != nil {
+	if err != nil { // if we can not get likes, just return for system availability
 		log.Println(err)
 		return result, nil
 	}

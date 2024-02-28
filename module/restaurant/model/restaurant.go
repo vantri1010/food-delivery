@@ -15,7 +15,7 @@ type Restaurant struct {
 	Logo       *common.Image      `json:"logo" gorm:"column:logo"`
 	Cover      *common.Images     `json:"cover" gorm:"column:cover"`
 	UserId     int                `json:"-" gorm:"column:user_id"` // for preload
-	User       *common.SimpleUser `json:"user" gorm:"preload:false"`
+	User       *common.SimpleUser `json:"user" gorm:"<-:false"`    // to avoid insert into associated table user when insert into restaurant
 	LikedCount int                `json:"liked_count" gorm:"-"`
 }
 
