@@ -3,6 +3,7 @@ package ginrstlike
 import (
 	"food-delivery/common"
 	"food-delivery/component/appctx"
+	restaurantstorage "food-delivery/module/restaurant/storage"
 	rstlikebiz "food-delivery/module/restaurantlike/biz"
 	restaurantlikemodel "food-delivery/module/restaurantlike/model"
 	restaurantlikestore "food-delivery/module/restaurantlike/store"
@@ -28,7 +29,8 @@ func UserLikeRestaurant(appCtx appctx.AppContext) gin.HandlerFunc {
 		}
 
 		store := restaurantlikestore.NewSQLstore(appCtx.GetMainDBConnection())
-		biz := rstlikebiz.NewUserLikeRestaurantBiz(store)
+		incStore := restaurantstorage.NewSQLStore(appCtx.GetMainDBConnection())
+		biz := rstlikebiz.NewUserLikeRestaurantBiz(store, incStore)
 
 		if err := biz.LikeRestaurant(c.Request.Context(), &data); err != nil {
 			panic(err)

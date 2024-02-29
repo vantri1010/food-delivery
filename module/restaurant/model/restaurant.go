@@ -16,7 +16,7 @@ type Restaurant struct {
 	Cover      *common.Images     `json:"cover" gorm:"column:cover"`
 	UserId     int                `json:"-" gorm:"column:user_id"` // for preload
 	User       *common.SimpleUser `json:"user" gorm:"<-:false"`    // to avoid insert into associated table user when insert into restaurant
-	LikedCount int                `json:"liked_count" gorm:"-"`
+	LikedCount int                `json:"liked_count" gorm:"column:liked_count"`
 }
 
 func (Restaurant) TableName() string {
