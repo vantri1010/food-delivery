@@ -31,7 +31,7 @@ func main() {
 		return nil
 	})
 
-	group := asyncjob.NewGroup(false, job1, job2, job3)
+	group := asyncjob.NewGroup(true, job1, job2, job3)
 
 	if err := group.Run(context.Background()); err != nil {
 		log.Println(err)

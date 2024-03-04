@@ -2,7 +2,7 @@ package rstlikebiz
 
 import (
 	"context"
-	"food-delivery/common"
+	"food-delivery/component/asyncjob"
 	"food-delivery/module/restaurantlike/model"
 	"log"
 )
@@ -31,14 +31,14 @@ func (biz *userLikeRestaurantBiz) LikeRestaurant(ctx context.Context, data *rest
 		return restaurantlikemodel.ErrCannotLikeRestaurant(err)
 	}
 
-	go func() { // goroutine for avoiding crashes
-		defer common.AppRecover()
+	// Side effective goroutine for avoiding crashes
+	j := asyncjob.NewJob(func(ctx context.Context) error {
+		return biz.IncStore.IncreaseLikeCount(ctx, data.RestaurantId)
+	})
 
-		if err := biz.IncStore.IncreaseLikeCount(ctx, data.RestaurantId); err != nil {
-			// should not do this: return restaurantlikemodel.ErrCannotLikeRestaurant(err)
-			log.Println(err)
-		}
-	}()
+	if err := asyncjob.NewGroup(true, j).Run(ctx); err != nil {
+		log.Println(err)
+	}
 
 	return nil
 }
