@@ -7,7 +7,7 @@ import (
 
 type Message struct {
 	id        string
-	channel   Topic
+	topic     Topic
 	data      interface{}
 	createdAt time.Time
 }
@@ -23,15 +23,15 @@ func NewMessage(data interface{}) *Message {
 }
 
 func (evt *Message) String() string {
-	return fmt.Sprintf("Message %s", evt.channel)
+	return fmt.Sprintf("Message %s", evt.topic)
 }
 
-func (evt *Message) Channel() Topic {
-	return evt.channel
+func (evt *Message) Topic() Topic {
+	return evt.topic
 }
 
-func (evt *Message) SetChannel(channel Topic) {
-	evt.channel = channel
+func (evt *Message) SetTopic(channel Topic) {
+	evt.topic = channel
 }
 
 func (evt *Message) Data() interface{} {

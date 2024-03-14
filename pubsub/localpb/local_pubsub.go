@@ -10,18 +10,17 @@ import (
 // A pb run locally (in-mem)
 // It has a queue (buffer channel) at it's core and many group of subscribers.
 // Because we want to send a message with a specific topic for many subscribers in a group can handle.
-
 type localPubSub struct {
-	messageQueue chan *pubsub.Message
-	mapChannel   map[pubsub.Topic][]chan *pubsub.Message // one topic has many subscribers
-	locker       *sync.RWMutex                           // use when concurrent
+	buffChanMsg chan *pubsub.Message
+	mapChannel  map[pubsub.Topic][]chan *pubsub.Message // one topic has many subscribers
+	locker      *sync.RWMutex                           // use when subscribe (non-concurrent)
 }
 
 func NewPubsub() *localPubSub {
 	pb := &localPubSub{
-		messageQueue: make(chan *pubsub.Message, 10000),
-		mapChannel:   make(map[pubsub.Topic][]chan *pubsub.Message),
-		locker:       new(sync.RWMutex),
+		buffChanMsg: make(chan *pubsub.Message, 10000),
+		mapChannel:  make(map[pubsub.Topic][]chan *pubsub.Message),
+		locker:      new(sync.RWMutex),
 	}
 
 	pb.run()
@@ -33,44 +32,41 @@ func NewPubsub() *localPubSub {
 // It is a fire-and-forget operation, meaning that it does not wait for the message to be delivered to all subscribers.
 // Instead, it immediately dispatches the message to the message queue and returns.
 // The message is delivered to the subscribers in a separate goroutine.
-func (ps *localPubSub) Publish(ctx context.Context, channel pubsub.Topic, data *pubsub.Message) error {
-	data.SetChannel(channel)
+func (ps *localPubSub) Publish(ctx context.Context, topic pubsub.Topic, data *pubsub.Message) error {
+	data.SetTopic(topic)
 
 	go func() {
-		ps.messageQueue <- data
 		log.Println("New event published: ", data.String(), "with data: ", data.Data())
+		ps.buffChanMsg <- data
 	}()
 	return nil
 }
 
-// Subscribe subscribes to a topic and returns a channel that receives messages on that topic.
+// Subscribe function subscribes to a topic by create a channel of message slot in a list channels identical by topic we call mapChannel
+// Then returns a channel that receives messages on that topic.
+// The returned channel and the channel appended to the map are identical
 // The returned function can be called to unsubscribe from the topic.
-//
-// The context is used to allow cancellation of the subscription. If the context is cancelled,
-// the returned function will unsubscribe and close the channel.
-//
-// The function is thread-safe and can be called from multiple goroutines.
 func (ps *localPubSub) Subscribe(ctx context.Context, topic pubsub.Topic) (ch <-chan *pubsub.Message, close func()) {
-	c := make(chan *pubsub.Message)
+	newsubcrb := make(chan *pubsub.Message)
 
 	ps.locker.Lock()
 
-	if val, ok := ps.mapChannel[topic]; ok {
-		val = append(ps.mapChannel[topic], c)
-		ps.mapChannel[topic] = val
+	if chans, ok := ps.mapChannel[topic]; ok {
+		chans = append(ps.mapChannel[topic], newsubcrb)
+		ps.mapChannel[topic] = chans
 	} else {
-		ps.mapChannel[topic] = []chan *pubsub.Message{c}
+		ps.mapChannel[topic] = []chan *pubsub.Message{newsubcrb}
 	}
 
 	ps.locker.Unlock()
 
-	return c, func() {
+	return newsubcrb, func() {
 		log.Println("Unsubscribe")
 
 		if chans, ok := ps.mapChannel[topic]; ok {
 			for i := range chans {
-				if chans[i] == c {
-					// remove element at index i (of c) in slice  chans
+				if chans[i] == newsubcrb {
+					// remove element at index i in slice chans
 					chans = append(chans[:i], chans[i+1:]...)
 
 					ps.locker.Lock()
@@ -84,23 +80,28 @@ func (ps *localPubSub) Subscribe(ctx context.Context, topic pubsub.Topic) (ch <-
 
 }
 
+// The run function in the localPubSub struct is responsible for starting the pubsub service.
+// It does this by creating a goroutine that listens for messages on the buffChanMsg channel
+// and dispatches them to the appropriate subscribers that registered by Subscribe function.
 func (ps *localPubSub) run() error {
 	log.Println("Pubsub started")
 
 	go func() {
 		for {
-			mess := <-ps.messageQueue
-			log.Println("Message dequeue", mess)
+			mess := <-ps.buffChanMsg // wait (blocking) until buffChanMsg has message
+			log.Println("Message dequeue", mess.String(), "with data: ", mess.Data())
 
-			if subs, ok := ps.mapChannel[mess.Channel()]; ok {
+			if subs, ok := ps.mapChannel[mess.Topic()]; ok {
+				// use goroutine to send messages to each subscriber concurrently
+				// to avoid blocking if the buffer channel somehow broken
 				for i := range subs {
-					go func(c chan *pubsub.Message) {
-						c <- mess
+					go func(subi chan *pubsub.Message) {
+						subi <- mess
 					}(subs[i])
 				}
 			}
 			//else {
-			//	ps.messageQueue <- mess
+			//	ps.buffChanMsg <- mess
 			//}
 		}
 	}()

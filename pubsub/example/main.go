@@ -1,4 +1,4 @@
-package example
+package main
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 
 func main() {
 	var localPb pubsub.Pubsub = localpb.NewPubsub()
-	chn := pubsub.Topic("OrderCreated")
+	topic := pubsub.Topic("OrderCreated")
 
-	sub1, close1 := localPb.Subscribe(context.Background(), chn)
-	sub2, close2 := localPb.Subscribe(context.Background(), chn)
+	sub1, close1 := localPb.Subscribe(context.Background(), topic)
+	sub2, close2 := localPb.Subscribe(context.Background(), topic)
 
-	localPb.Publish(context.Background(), chn, pubsub.NewMessage(1))
-	localPb.Publish(context.Background(), chn, pubsub.NewMessage(2))
+	localPb.Publish(context.Background(), topic, pubsub.NewMessage(1))
+	localPb.Publish(context.Background(), topic, pubsub.NewMessage(2))
 
 	go func() {
 		for {
