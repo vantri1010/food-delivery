@@ -1,12 +1,7 @@
 package subscriber
 
-import (
-	"context"
-	"food-delivery/component/appctx"
-)
-
-func Setup(appCtx appctx.AppContext, ctx context.Context) {
-	InCreaseLikeCountAfterUserLikeRestaurant(appCtx, ctx)
-	DeCreaseLikeCountAfterUserDisLikeRestaurant(appCtx, ctx)
-	PushNotiUserLikeRestaurant(appCtx, ctx)
-}
+//func Setup(appCtx appctx.AppContext, ctx context.Context) {
+//	IncreaseLikeCountAfterUserLikeRestaurant(appCtx, ctx)
+//	DecreaseLikeCountAfterUserDisLikeRestaurant(appCtx, ctx)
+//	PushNotiUserLikeRestaurant(appCtx, ctx)
+//}

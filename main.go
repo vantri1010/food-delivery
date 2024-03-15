@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"food-delivery/component/appctx"
 	"food-delivery/component/uploadprovider"
 	"food-delivery/middleware"
@@ -58,7 +57,8 @@ func main() {
 	appContext := appctx.NewAppContext(db, s3Provider, secretKey, ps)
 
 	// Setup subscribers
-	subscriber.Setup(appContext, context.Background())
+	//subscriber.Setup(appContext, context.Background())
+	_ = subscriber.NewEngine(appContext).Start()
 
 	r := gin.Default()
 	r.Use(middleware.Recover(appContext))
