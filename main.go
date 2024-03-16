@@ -1,17 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"food-delivery/component/appctx"
 	"food-delivery/component/uploadprovider"
 	"food-delivery/middleware"
 	"food-delivery/pubsub/localpb"
 	"food-delivery/subscriber"
 	"github.com/gin-gonic/gin"
+	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Restaurant struct {
@@ -77,5 +83,80 @@ func main() {
 	setupRoute(appContext, v1)
 	setupAdminRoute(appContext, v1)
 
+	startSocketIOServer(r)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+}
+func startSocketIOServer(engine *gin.Engine) {
+	server, _ := socketio.NewServer(&engineio.Options{
+		Transports: []transport.Transport{websocket.Default},
+	})
+
+	server.OnConnect("/", func(s socketio.Conn) error {
+		s.SetContext("")
+		fmt.Println("Socket connected:", s.ID(), " IP:", s.RemoteAddr())
+
+		go func() {
+			i := 0
+			for {
+				i++
+				s.Emit("test", i)
+				time.Sleep(time.Second)
+
+				if i == 10 {
+					break
+				}
+			}
+		}()
+		return nil
+	})
+
+	server.OnEvent("/", "authenticate", func(s socketio.Conn, token string) {
+		// Validate token
+		// If false: s.Close(), and return
+
+		// If true
+		// => UserId
+		// Fetch db find user by Id
+		// Here: s belongs to who? (user_id)
+		// We need a map[user_id][]socketio.Conn
+		log.Println("socket and token:", s.ID(), token)
+	})
+
+	type A struct {
+		Age int `json:"age"`
+	}
+
+	server.OnEvent("/", "notice", func(s socketio.Conn, msg A) {
+		fmt.Println("notice:", msg.Age)
+		s.Emit("reply", A{msg.Age + 1})
+	})
+
+	server.OnEvent("/chat", "msg", func(s socketio.Conn, msg string) string {
+		s.SetContext(msg)
+		fmt.Println("msg:", msg)
+		return "recv " + msg
+	})
+
+	server.OnEvent("/", "bye", func(s socketio.Conn) string {
+		last := s.Context().(string)
+		s.Emit("bye", last)
+		s.Close()
+		return last
+	})
+
+	server.OnError("/", func(s socketio.Conn, e error) {
+		fmt.Println("meet error:", e)
+	})
+
+	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Println("socket closed:", reason)
+		// Remove socket from socket engine (from app context)
+	})
+
+	go server.Serve()
+
+	engine.GET("/socket.io/*any", gin.WrapH(server))
+	engine.POST("/socket.io/*any", gin.WrapH(server))
+
+	engine.StaticFile("/demo/", "./demo.html")
 }
