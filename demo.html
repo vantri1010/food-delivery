@@ -9,7 +9,7 @@
 
 <body>
 <div id="main">
-
+Testing socket.io
 </div>
 
 <script>
@@ -17,12 +17,14 @@
         transports: ['websocket'],
     });
 
+    var logTimer = null
+
 
     socket.on('connect', () => {
         console.log('Client connected');
 
         // Emit token
-        socket.emit('authenticate', 'abcsakdasjkjsakjdkajdjaswiqe');
+        socket.emit('authenticate', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXlsb2FkIjp7InVzZXJfaWQiOjEsInJvbGUiOiJ1c2VyIn0sImV4cCI6MTcxMTQyNzk0NywiaWF0IjoxNzA4ODM1OTQ3fQ.07G_MzsLg2JdWE9ln2zknwm5YBbRIaqKGln70uSeFqE');
     })
 
     // socket.on('authenticated', () => {
@@ -34,10 +36,25 @@
     socket.on('notice', (msg) => console.log(msg));
 
     socket.on('disconnect', () => console.log('Socket is disconnected'))
+    socket.on('authenticated', (msg) =>{
+        console.log('Authenticated', msg);
 
-    setInterval(function () {
-        socket.emit('notice', {age: 10})
-    }, 1000)
+        if (logTimer != null) {
+            clearInterval(logTimer);
+        }
+
+        logTimer = setInterval(() => {
+            socket.emit('UserUpdateLocation', {"lat": 10.8000422, "lng": 106.6623444})
+        }, 3000);
+    });
+
+    socket.on('your_profile', (msg) => console.log('your profile:', msg));
+    socket.on('authentication_failed', (msg) => console.log('authentication_failed:', msg));
+    socket.on('TopicUserLikeRestaurant', (msg) => console.log('TopicUserLikeRestaurant:', msg));
+
+    // setInterval(function () {
+    //     socket.emit('notice', {age: 10})
+    // }, 1000)
 
     // const socket2 = io("/chat", {
     //     // transports: ['websocket'],

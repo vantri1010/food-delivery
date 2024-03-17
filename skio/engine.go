@@ -3,22 +3,29 @@ package skio
 import (
 	"context"
 	"fmt"
-	"food-delivery/component/appctx"
 	"food-delivery/component/tokenprovider/jwt"
 	userstore "food-delivery/module/user/store"
+	"food-delivery/module/user/transport/skuser"
 	"github.com/gin-gonic/gin"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
 	"github.com/googollee/go-socket.io/engineio/transport"
 	"github.com/googollee/go-socket.io/engineio/transport/websocket"
+	"gorm.io/gorm"
 	"sync"
 )
 
+type AppContext interface {
+	GetMainDBConnection() *gorm.DB
+	SecretKey() string
+	GetRealtimeEngine() RealtimeEngine
+}
+
 type RealtimeEngine interface {
-	UserSocket(userId int) []AppSocket
+	UserSockets(userId int) []AppSocket
 	EmitToRoom(room string, key string, data interface{}) error
 	EmitToUser(userId int, key string, data interface{}) error
-	Run(ctx appctx.AppContext, engine *gin.Engine) error
+	Run(ctx AppContext, engine *gin.Engine) error
 }
 
 type rtEngine struct {
@@ -67,7 +74,7 @@ func (engine *rtEngine) removeAppSocket(userId int, appSck AppSocket) {
 	}
 }
 
-func (engine *rtEngine) UserSocket(userId int) []AppSocket {
+func (engine *rtEngine) UserSockets(userId int) []AppSocket {
 	var sockets []AppSocket
 
 	if scks, ok := engine.storage[userId]; ok {
@@ -91,7 +98,7 @@ func (engine *rtEngine) EmitToUser(userId int, key string, data interface{}) err
 	return nil
 }
 
-func (engine *rtEngine) Run(appCtx appctx.AppContext, r *gin.Engine) error {
+func (engine *rtEngine) Run(appCtx AppContext, r *gin.Engine) error {
 	server, err := socketio.NewServer(&engineio.Options{
 		Transports: []transport.Transport{websocket.Default},
 	})
@@ -149,9 +156,12 @@ func (engine *rtEngine) Run(appCtx appctx.AppContext, r *gin.Engine) error {
 		engine.saveAppSocket(user.Id, appSck)
 
 		s.Emit("authenticated", user)
+
+		server.OnEvent("/", "UserUpdateLocation", skuser.OnUserUpdateLocation(appCtx, user))
 	})
 
 	go server.Serve()
+	r.StaticFile("/demo/", "./demo.html")
 
 	r.GET("/socket.io/*any", gin.WrapH(server))
 	r.POST("/socket.io/*any", gin.WrapH(server))

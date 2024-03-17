@@ -11,7 +11,7 @@ import (
 // HasRestaurantId created to avoid restaurantlikemodel dependent
 type HasRestaurantId interface {
 	GetRestaurantId() int
-	//GetUserId()
+	GetUserId() int
 }
 
 //func IncreaseLikeCountAfterUserLikeRestaurant(appCtx appctx.AppContext, ctx context.Context) {
@@ -47,6 +47,20 @@ func PushNotiUserLikeRestaurant(appCtx appctx.AppContext) consumerJob {
 		Hdl: func(ctx context.Context, message *pubsub.Message) error {
 			likeData := message.Data().(HasRestaurantId)
 			log.Println("Push notification when user likes restaurant", likeData)
+
+			return nil
+		},
+	}
+}
+
+func EmitRealtimeAfterUserLikeRestaurant(appCtx appctx.AppContext) consumerJob {
+	return consumerJob{
+		Title: "Realtime emit After User Like Restaurant",
+		Hdl: func(ctx context.Context, message *pubsub.Message) error {
+			likeData := message.Data().(HasRestaurantId)
+			if err := appCtx.GetRealtimeEngine().EmitToUser(likeData.GetUserId(), string(message.Topic()), likeData); err != nil {
+				log.Println("Error in emit to user", err)
+			}
 
 			return nil
 		},
